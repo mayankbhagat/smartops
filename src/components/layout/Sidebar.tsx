@@ -26,8 +26,8 @@ export function Sidebar() {
       className="glass border-r border-white/10 w-64 h-screen fixed top-0 left-0 hidden md:flex flex-col my-4 ml-4 rounded-xl shadow-lg z-50"
     >
       <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center">
-          <Bot size={20} className="text-white" />
+        <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#1E1B4B]">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
         </div>
         <div className="flex font-bold text-2xl tracking-tight text-white drop-shadow-sm" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
           {"SmartOps".split('').map((char, index) => (
