@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase';
 import { runAnalystAgent } from './analystAgent';
 import { runInventoryAgent } from './inventoryAgent';
 import { runLogisticsAgent } from './logisticsAgent';
+import { runForecastAgent } from './forecastAgent';
+import { runSustainabilityAgent } from './sustainabilityAgent';
 import { runDecisionAgent } from './decisionAgent';
 
 export async function runFullAgenticPipeline(businessId: string) {
@@ -19,32 +21,52 @@ export async function runFullAgenticPipeline(businessId: string) {
       supabase.from('deliveries').select('*').eq('business_id', businessId).eq('status', 'pending')
     ]);
 
-    // 2. Run Sub-Agents in Parallel taking advantage of independent schemas
-    console.log("Starting sub-agents...");
+    // 2. Run Phase 1: Independent Sub-Agents in Parallel
+    console.log("[SmartOps Pipeline] Starting Phase 1: Independent Agents...");
     const [analystResult, inventoryResult, logisticsResult] = await Promise.all([
       runAnalystAgent(businessId, sales || [], expenses || []),
       runInventoryAgent(businessId, inventory || [], sales || []),
       runLogisticsAgent(businessId, deliveries || [])
     ]);
 
-    // 3. Run Master Decision Agent sequentially after sub-agents complete
-    console.log("Starting master decision agent...");
-    const decisionResult = await runDecisionAgent(businessId, analystResult, inventoryResult, logisticsResult);
+    // 3. Run Phase 2: Dependent Agents (need outputs from Phase 1)
+    console.log("[SmartOps Pipeline] Starting Phase 2: Forecast + Sustainability Agents...");
+    const [forecastResult, sustainabilityResult] = await Promise.all([
+      runForecastAgent(businessId, sales || [], expenses || [], analystResult),
+      runSustainabilityAgent(businessId, deliveries || [], logisticsResult)
+    ]);
 
-    // 4. Save Final Master Insight to DB
+    // 4. Run Phase 3: Master Decision Agent (synthesizes everything)
+    console.log("[SmartOps Pipeline] Starting Phase 3: Decision Agent...");
+    const decisionResult = await runDecisionAgent(
+      businessId, 
+      { ...analystResult, forecast: forecastResult },
+      inventoryResult, 
+      { ...logisticsResult, sustainability: sustainabilityResult }
+    );
+
+    // 5. Save Final Master Insight to DB
     await supabase.from('insights').insert({
       business_id: businessId,
       insight_type: 'executive_summary',
-      title: 'Global Business Strategy & Health Report',
+      title: 'Complete AI Business Intelligence Report',
       description: decisionResult.executiveSummary,
       data: decisionResult,
       action_items: decisionResult.strategicRecommendations
     });
 
-    return { success: true, decisionResult, analystResult, inventoryResult, logisticsResult };
+    return { 
+      success: true, 
+      decisionResult, 
+      analystResult, 
+      inventoryResult, 
+      logisticsResult,
+      forecastResult,
+      sustainabilityResult 
+    };
 
   } catch (error: any) {
-    console.error('Pipeline Error:', error);
+    console.error('[SmartOps Pipeline] Error:', error);
     return { success: false, error: error.message };
   }
 }

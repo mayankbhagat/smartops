@@ -2,10 +2,12 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { CopilotPanel } from '@/components/chat/CopilotPanel';
 import { ReactNode } from 'react';
+import { DataProvider } from '@/context/DataContext';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <DataProvider>
+      <div className="flex min-h-screen bg-background text-foreground">
       {/* Fixed Sidebar */}
       <Sidebar />
 
@@ -14,7 +16,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <Header />
         
         {/* Native Window Scroll Content */}
-        <main className="flex-1 pt-24 pb-8 px-6 lg:px-12 w-full max-w-7xl mx-auto">
+        <main className="flex-1 pt-24 pb-8 px-4 md:px-6 lg:px-12 w-full max-w-7xl mx-auto">
           {children}
         </main>
         
@@ -22,5 +24,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <CopilotPanel />
       </div>
     </div>
+    </DataProvider>
   );
 }

@@ -7,9 +7,20 @@ import { HUBS } from "@/data/hubs";
 
 const geoUrl = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/india/india-states.json";
 
+const indiaHubs = HUBS.filter(h => h.region === 'India');
+
+// Animated routes between Indian hubs
+const DEMO_ROUTES = [
+  ['mumbai', 'delhi'],
+  ['delhi', 'kolkata'],
+  ['bengaluru', 'chennai'],
+  ['mumbai', 'bengaluru'],
+  ['hyderabad', 'chennai'],
+];
+
 export default function IndiaMap({ sourceHubId, destHubId }: { sourceHubId?: string, destHubId?: string }) {
-  const sourceHub = HUBS.find(h => h.id === sourceHubId);
-  const destHub = HUBS.find(h => h.id === destHubId);
+  const sourceHub = indiaHubs.find(h => h.id === sourceHubId);
+  const destHub = indiaHubs.find(h => h.id === destHubId);
 
   return (
     <div className="w-full h-full relative flex items-center justify-center">
@@ -25,19 +36,14 @@ export default function IndiaMap({ sourceHubId, destHubId }: { sourceHubId?: str
                 key={geo.rsmKey}
                 geography={geo}
                 fill="rgba(59, 130, 246, 0.15)"
-                stroke="rgba(255, 255, 255, 0.8)"
-                strokeWidth={0.8}
+                stroke="rgba(255, 255, 255, 0.08)"
+                strokeWidth={0.5}
                 style={{
-                  default: { 
-                    outline: "none", 
-                    transition: "all 250ms", 
-                    filter: "drop-shadow(0px 0px 6px rgba(255, 255, 255, 0.4))" 
-                  },
+                  default: { outline: "none", transition: "all 250ms" },
                   hover: { 
-                    fill: "rgba(147, 51, 234, 0.4)", 
+                    fill: "rgba(147, 51, 234, 0.3)", 
                     outline: "none", 
-                    cursor: "pointer", 
-                    filter: "drop-shadow(0px 0px 15px rgba(147, 51, 234, 0.8))" 
+                    cursor: "pointer",
                   },
                   pressed: { outline: "none" },
                 }}
@@ -46,35 +52,55 @@ export default function IndiaMap({ sourceHubId, destHubId }: { sourceHubId?: str
           }
         </Geographies>
         
-        {/* Draw Line connecting points if both are selected */}
+        {/* Demo animated routes when no specific route is selected */}
+        {!sourceHub && !destHub && DEMO_ROUTES.map(([a, b], i) => {
+          const hubA = indiaHubs.find(h => h.id === a);
+          const hubB = indiaHubs.find(h => h.id === b);
+          if (!hubA || !hubB) return null;
+          return (
+            <Line
+              key={i}
+              from={hubA.coordinates}
+              to={hubB.coordinates}
+              stroke="rgba(99,102,241,0.3)"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              className="route-animated"
+              style={{ strokeDasharray: "6 4" }}
+            />
+          );
+        })}
+
+        {/* Selected route line */}
         {sourceHub && destHub && (
           <Line
             from={sourceHub.coordinates}
             to={destHub.coordinates}
             stroke="#10b981"
-            strokeWidth={2}
+            strokeWidth={2.5}
             strokeLinecap="round"
-            style={{
-              strokeDasharray: "4",
-              animation: "dash 1s linear infinite",
-            }}
+            className="route-animated"
+            style={{ strokeDasharray: "6 4" }}
           />
         )}
 
-        {HUBS.map(({ name, coordinates }) => (
-          <Marker key={name} coordinates={coordinates as [number, number]}>
-            <circle r={8} fill="#9333ea" className="animate-ping opacity-75" />
-            <circle r={4} fill="#3b82f6" />
-            <circle r={2} fill="#ffffff" />
-            <text
-              textAnchor="middle"
-              y={-15}
-              style={{ fontFamily: "inherit", fill: "#ffffff", fontSize: "12px", fontWeight: "bold", filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.8))" }}
-            >
-              {name}
-            </text>
-          </Marker>
-        ))}
+        {indiaHubs.map(({ id, name, coordinates }) => {
+          const isActive = id === sourceHubId || id === destHubId;
+          return (
+            <Marker key={id} coordinates={coordinates as [number, number]}>
+              <circle r={isActive ? 10 : 6} fill={isActive ? "rgba(99,102,241,0.4)" : "rgba(147,51,234,0.2)"} className={isActive ? "animate-ping" : ""} />
+              <circle r={isActive ? 5 : 3.5} fill={isActive ? "#6366f1" : "#3b82f6"} />
+              <circle r={isActive ? 2 : 1.5} fill="#ffffff" />
+              <text
+                textAnchor="middle"
+                y={-14}
+                style={{ fontFamily: "inherit", fill: "#ffffff", fontSize: "10px", fontWeight: "bold", filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.8))" }}
+              >
+                {name}
+              </text>
+            </Marker>
+          );
+        })}
       </ComposableMap>
     </div>
   );
